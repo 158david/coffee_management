@@ -19,7 +19,7 @@ export const errorMiddleware = (
 
     if (err.code === "P2002") {
         return res.status(409).json({
-            message: "Un ingredient cu acest nume exista deja"
+            message: "Inregistrarea exista deja"
         });  
       }
     }
