@@ -1,0 +1,77 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model Category {
+  id             Int         @id @default(autoincrement())
+  name           String      @unique
+  description    String?
+
+  products       Product[]
+}
+
+model Product {
+  id             Int         @id @default(autoincrement())
+  name           String
+  description    String?
+  price          Decimal
+  active         Boolean     @default(true)
+  categoryId     Int
+
+  category       Category    @relation(fields: [categoryId], references: [id])
+  recipeIngredients RecipeIngredient[]
+  orderItems        OrderItem[]
+}
+
+model Ingredient {
+  id             Int         @id @default(autoincrement())
+  name           String      @unique
+  unit           String
+  quantity       Decimal     @default(0)
+  minimumStock   Decimal     @default(0)
+  active         Boolean     @default(true)
+
+  recipeIngredients RecipeIngredient[]
+}
+
+model RecipeIngredient {
+  id             Int         @id @default(autoincrement())
+  productId      Int
+  ingredientId   Int
+  quantity       Decimal
+
+  product        Product     @relation(fields: [productId], references: [id])
+  ingredient     Ingredient  @relation(fields: [ingredientId], references: [id])
+
+  @@unique([productId, ingredientId])
+}
+
+model Order {
+  id Int @id @default(autoincrement())
+  status String @default("PENDING")
+  total Decimal @default(0)
+  createdAt DateTime @default(now())
+
+  items OrderItem[]
+}
+
+model OrderItem {
+  id Int @id @default(autoincrement())
+  orderId Int
+  productId Int
+  quantity Int
+  unitPrice Decimal
+  
+  order Order @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
