@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../config/prisma.js";
+import { recalculateOrderTotal } from "../utils/order.utils.js";
 import { 
     createOrderSchema,
     createOrderItemSchema,
     updateOrderItemSchema,
+    updateOrderSchema,
     orderIdSchema
  } from "../schemas/order.schemas.js";
 
@@ -26,6 +28,103 @@ export const getOrders = async (
         res.json(orders);
     } catch (error) {
         next(error);
+    }
+};
+
+export const getOrderById = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const idResult = orderIdSchema.safeParse(req.params.id);
+
+        if (!idResult.success) {
+            return res.status(400).json({
+                message: "ID-ul comenzii este invalid"
+            });
+        }
+
+        const order = await prisma.order.findUnique({
+            where: {
+                id: idResult.data
+            },
+            include: {
+                items: {
+                    include: {
+                        product: true
+                    }
+                }
+            }
+        });
+
+        if (!order) {
+            return res.status(404).json({
+                message: "Comanda nu a fost gasita"
+            });
+        }
+
+        res.json(order);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateOrder = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const idResult = orderIdSchema.safeParse(req.params.id);
+
+        if (!idResult.success) {
+            return res.status(400).json({
+                message: "ID-ul comenzii este invalid"
+            });
+        }
+        
+        const dataResult = updateOrderSchema.safeParse(req.body);
+
+        if (!dataResult.success) {
+            return res.status(400).json({
+                message: "Datele comenzii sunt invalide",
+                errors: dataResult.error.issues
+            });
+        }
+
+        const order = await prisma.order.findUnique({
+            where: {
+                id: idResult.data
+            }
+        });
+
+        if (!order) {
+            return res.status(404).json({
+                message: "Comanda nu a fost gasita"
+            });
+        }
+
+        const completedAt = 
+            dataResult.data.status === "COMPLETED"
+                ? order.status === "COMPLETED"
+                    ? order.completedAt
+                    : new Date()
+                : null;      
+
+        const updatedOrder = await prisma.order.update({
+            where: {
+                id: idResult.data
+            },
+            data: {
+                status: dataResult.data.status,
+                completedAt
+            }
+        });
+    
+        res.json(updatedOrder);
+    } catch (error) {
+        next (error);
     }
 };
 
@@ -105,6 +204,8 @@ export const createOrderItem = async (
                 unitPrice: product.price
             }
         });
+
+        await recalculateOrderTotal(order.id);
 
         res.status(201).json(orderItem);
     } catch (error) {
@@ -195,6 +296,8 @@ export const updateOrderItem = async (
             data: dataResult.data
         });
 
+        await recalculateOrderTotal(orderIdResult.data);
+
         res.json(updatedOrderItem);
     } catch (error) {
         next (error);
@@ -234,6 +337,8 @@ export const deleteOrderItem = async (
                 id: itemIdResult.data
             }
         });
+
+        await recalculateOrderTotal(orderIdResult.data);
 
         res.status(204).send();
     }catch (error) {

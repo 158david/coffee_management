@@ -61,6 +61,7 @@ model Order {
   status String @default("PENDING")
   total Decimal @default(0)
   createdAt DateTime @default(now())
+  completedAt DateTime?
 
   items OrderItem[]
 }

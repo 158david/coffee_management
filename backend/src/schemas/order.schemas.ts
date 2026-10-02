@@ -14,3 +14,7 @@ export const createOrderItemSchema = z.object({
 export const updateOrderItemSchema = z.object({
     quantity: z.number().int().positive()
 });
+
+export const updateOrderSchema = z.object({
+    status: z.enum(["PENDING", "COMPLETED", "CANCELED"])
+});
