@@ -165,3 +165,23 @@ export const deleteIngredient = async (
         next(error);
     }
 };
+
+export const getStockAlerts = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const ingredients = await prisma.$queryRaw`
+        SELECT id, name, unit, quantity, minimumStock, active
+        FROM Ingredient
+        WHERE active = true
+        AND quantity <= minimumStock
+        ORDER BY quantity ASC
+        `;
+
+        res.json(ingredients);
+    } catch (error) {
+        next(error);
+    }
+};

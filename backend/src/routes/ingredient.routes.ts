@@ -3,12 +3,15 @@ import { getIngredients,
     getIngredientById,
     createIngredient,
     updateIngredient,
-    deleteIngredient
+    deleteIngredient,
+    getStockAlerts
  } from "../controllers/ingredient.controller.js";
 
 const router = Router();
 
 router.get("/", getIngredients);
+
+router.get("/stock-alerts", getStockAlerts);
 
 router.get("/:id", getIngredientById);
 

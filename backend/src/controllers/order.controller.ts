@@ -8,6 +8,7 @@ import {
     updateOrderSchema,
     orderIdSchema
  } from "../schemas/order.schemas.js";
+ import { consumeOrderStock } from "../utils/stock.utils.js";
 
 export const getOrders = async (
     req: Request,
@@ -121,6 +122,13 @@ export const updateOrder = async (
                 completedAt
             }
         });
+
+        if (
+            dataResult.data.status === "COMPLETED" &&
+            order.status !== "COMPLETED"
+        ) {
+            await consumeOrderStock(order.id);
+        }
     
         res.json(updatedOrder);
     } catch (error) {
